@@ -1,0 +1,3 @@
+[submodule "transformers-into-vaes"]
+	path = transformers-into-vaes
+	url = https://github.com/seongminp/transformers-into-vaes
