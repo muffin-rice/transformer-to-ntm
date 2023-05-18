@@ -1,44 +1,24 @@
-from xml.etree import ElementTree
 import torch
 from torch.utils.data import Dataset
-import os
-from os.path import isdir
+from sklearn.datasets import fetch_20newsgroups
 
-NYTIMES_DIR = '../data/nyt_corpus'
+NEWSGROUPS_DIR = '../data/20news'
 
-class NYTimesDataset(Dataset):
-    def __init__(self, tokenizer, out_dim, data_dir=NYTIMES_DIR, split='train'):
+class NewsGroupsDataset(Dataset):
+    def __init__(self, tokenizer, out_dim, data_dir = NEWSGROUPS_DIR, split ='train'):
         super().__init__()
+        if split == 'val':
+            split = 'test'
 
-        self.load_data(data_dir, range(2000, 2001))
+        self.dataset = fetch_20newsgroups(subset=split, data_home=data_dir, download_if_missing=False)
         self.tokenizer = tokenizer
         self.out_dim = out_dim
-
-    def load_data(self, dir, years : [int]):
-        self.dataset = []
-        for year in years:
-            for month in range(1,13):
-                for day in range(1, 33):
-                    fdir = f'{dir}/{year}/{month:02}/{day:02}'
-                    if not isdir(fdir):
-                        continue
-
-                    self.dataset.extend([f'{fdir}/{xml}' for xml in os.listdir(fdir)])
 
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        tree = ElementTree.parse(self.dataset[idx]).getroot()
-        s = ''
-        for i, element in enumerate(tree.iter()):
-            if element.text is None:
-                continue
-            element_text = element.text.strip()
-
-            s += element_text + '\n'
-
-        return self.process_line(s)
+        return self.process_line(self.dataset['data'][idx])
 
     def process_line(self, line):
 
