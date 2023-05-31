@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     tokenizer = T5TokenizerFast.from_pretrained('t5-small')
 
-    dm = GeneralDataModule(tokenizer,OUT_DIM, DATASET, BATCH_SIZE)
+    dm = GeneralDataModule(tokenizer, OUT_DIM, DATASET, BATCH_SIZE)
 
     iterations_per_training_epoch = math.ceil(
         len(dm.train_dataloader()) / BATCH_SIZE / NUM_TRAINERS
