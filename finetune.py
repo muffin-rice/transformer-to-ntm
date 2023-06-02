@@ -6,6 +6,21 @@ import math
 from datamodule import GeneralDataModule
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
+from torch import nn
+
+class LMHead(nn.Module):
+    def __init__(self, vocab_size, input_dim, dropout_p = 0.2):
+        super().__init__()
+        # dropout
+        self.drop = nn.Dropout(p = dropout_p)
+        self.head = nn.Linear(input_dim, vocab_size)
+        self.soft = nn.Softmax()
+        self.flattener = nn.Flatten()
+
+    def forward(self, x):
+        x = self.soft(self.head(self.drop(self.flattener(x))))
+
+        return x
 
 BATCH_SIZE = 64
 DATASET='20news'
@@ -13,7 +28,7 @@ NUM_WORKERS = 8
 NUM_TRAINERS = 1
 LOG_DIR = '../logs'
 DEVICE = 'cpu'
-NUM_EPOCHS = 20
+NUM_EPOCHS = 100
 OUT_DIM = 32
 
 if __name__ == "__main__":
@@ -29,6 +44,8 @@ if __name__ == "__main__":
         len(dm.train_dataloader()) / BATCH_SIZE / NUM_TRAINERS
     )
 
+    bow_head = LMHead(len(tokenizer.get_vocab()), input_dim = 16384) # 16384? 32 x 512
+
     model = T5VAE(tokenizer=tokenizer,
                   iterations_per_training_epoch=iterations_per_training_epoch,
                   latent_dim=32,
@@ -36,7 +53,8 @@ if __name__ == "__main__":
                   min_z=0.5,
                   fixed_reg_weight=None,
                   denoise_percentage=0.4,
-                  base_model='t5-small')
+                  base_model='t5-small',
+                  bow_head = bow_head)
 
     runner = Trainer(logger=tb_logger,
                      log_every_n_steps=5,
