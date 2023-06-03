@@ -60,7 +60,16 @@ class NewsGroupsDataset(Dataset):
         encoder_mask = encoded.attention_mask.squeeze(0)
         decoder_target = target_encoded.input_ids.squeeze(0)
 
-        bow_from_sentence = self.get_bow_from_sentence(encoder_input)
+        all_encoded = self.tokenizer(
+            f"{content}",
+            add_special_tokens=True,
+            max_length=None,
+            padding=False,
+            truncation=False,
+            return_tensors="pt",
+        )
+
+        bow_from_sentence = self.get_bow_from_sentence(all_encoded.input_ids.squeeze(0))
 
         return (
             encoder_input,

@@ -44,7 +44,7 @@ if __name__ == "__main__":
         len(dm.train_dataloader()) / BATCH_SIZE / NUM_TRAINERS
     )
 
-    bow_head = LMHead(len(tokenizer.get_vocab()), input_dim = 16384) # 16384? 32 x 512
+    bow_head = LMHead(len(tokenizer.get_vocab()), input_dim = OUT_DIM * 512) # OUT_DIM x 512
 
     model = T5VAE(tokenizer=tokenizer,
                   iterations_per_training_epoch=iterations_per_training_epoch,
