@@ -22,14 +22,14 @@ class LMHead(nn.Module):
 
         return x
 
-BATCH_SIZE = 64
+BATCH_SIZE = 8
 DATASET='20news'
-NUM_WORKERS = 8
+NUM_WORKERS = 4
 NUM_TRAINERS = 1
 LOG_DIR = '../logs'
-DEVICE = 'cpu'
+DEVICE = 'mps'
 NUM_EPOCHS = 100
-OUT_DIM = 32
+OUT_DIM = 64
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -61,8 +61,7 @@ if __name__ == "__main__":
                      check_val_every_n_epoch=3,
                      accelerator=DEVICE,
                      devices=NUM_TRAINERS,
-                     max_epochs=NUM_EPOCHS,
-                     profiler='pytorch', )
+                     max_epochs=NUM_EPOCHS)
 
     model.val_dataloader = dm.val_dataloader
 
