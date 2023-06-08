@@ -84,7 +84,6 @@ class NewsGroupsDataset(Dataset):
 
     def get_documents_by_topic(self) -> [[str]]:
         # returns a list of docs by topics
-        x = [data for data, target in sorted(zip(self.dataset['data'], self.dataset['target']), key=lambda t : t[1])]
         curr_target = 0
         all_list = [[]]
 
@@ -93,6 +92,6 @@ class NewsGroupsDataset(Dataset):
                 all_list.append([])
                 curr_target = target
 
-            all_list[-1].append(target)
+            all_list[-1].append(data)
 
         return all_list

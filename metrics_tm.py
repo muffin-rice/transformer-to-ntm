@@ -6,11 +6,15 @@ from nltk.corpus import stopwords
 from gensim.corpora.dictionary import Dictionary
 from gensim.models.coherencemodel import CoherenceModel
 
-def get_keywords_from_docs(model : T5VAE, vocab : Dictionary, documents_encoded : [], document_masks : [], top_n = 10) -> [int]:
+def get_bow_from_model(model : T5VAE, doc, doc_mask, label):
+    _, _, _, _, bow = model.forward(doc, doc_mask, label)
+    return bow.detach().numpy()[0]
+
+def get_keywords_from_docs(model : T5VAE, vocab : Dictionary, documents_encoded : [], document_masks : [], labels : [],
+                           top_n = 10) -> [int]:
     bows = []
-    for doc, doc_mask in zip(documents_encoded, document_masks):
-        _, _, _, _, bow = model.forward(doc, doc_mask, None)
-        bows.append(bow.to_numpy())
+    for doc, doc_mask, label in zip(documents_encoded, document_masks, labels):
+        bows.append(get_bow_from_model(model, doc, doc_mask, label))
 
     bows = torch.Tensor(bows).sum(dim=0) # sum across docs
     argsorted = torch.argsort(bows, descending=True)
@@ -50,11 +54,9 @@ def calculate_coherences(topics : [str], documents : [], vocab : Dictionary):
 
     return coherence_per_topic
 
-def calc_coherence_newsgroups(model, dataset):
+def calc_coherence(model, dataset):
     # from newsgroups import NewsGroupsDataset
-
-    tokenizer = T5TokenizerFast.from_pretrained('t5-small')
-
+    # tokenizer = T5TokenizerFast.from_pretrained('t5-small')
     # dataset = NewsGroupsDataset(tokenizer, out_dim=32)
 
     docs_by_topic = dataset.get_documents_by_topic()
@@ -66,13 +68,15 @@ def calc_coherence_newsgroups(model, dataset):
     for docs in docs_by_topic:
         documents_encoded = []
         documents_masks = []
+        documents_labels = []
         for doc in docs:
-            inp, mask, _, _ = dataset.process_document(doc)
-            documents_encoded.append(inp)
-            documents_masks.append(mask)
+            inp, mask, label, _ = dataset.process_document(doc)
+            documents_encoded.append(inp[None, ...])
+            documents_masks.append(mask[None, ...])
+            documents_labels.append(label[None, ...])
 
         keywords_topics.append(get_keywords_from_docs(model, vocabulary, documents_encoded=documents_encoded,
-                                                      document_masks = documents_masks))
+                                                      document_masks = documents_masks, labels=documents_labels))
 
     npmis = []
     for generated_topics, documents in zip(keywords_topics, docs_by_topic):
