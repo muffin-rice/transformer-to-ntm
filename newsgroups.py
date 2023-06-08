@@ -18,7 +18,6 @@ class NewsGroupsDataset(Dataset):
         self.dataset = fetch_20newsgroups(subset=split, data_home=data_dir, download_if_missing=False)
         self.tokenizer = tokenizer
         self.out_dim = out_dim
-        self.vocab = self.tokenizer.get_vocab()
         self.dictionary : Dictionary = Dictionary.load(f'{NEWSGROUPS_DIR}/20news_vocab.dict')
 
     def __len__(self):
@@ -26,6 +25,9 @@ class NewsGroupsDataset(Dataset):
 
     def get_vocab_size(self):
         return len(self.dictionary)
+
+    def get_vocabulary(self):
+        return self.dictionary
 
     def get_bow_from_sentence(self, document):
         tokenizer = lambda s: re.findall('\w+', s.lower())
@@ -79,3 +81,18 @@ class NewsGroupsDataset(Dataset):
             decoder_target,
             bow_from_sentence / bow_from_sentence.sum(),  # get distribution of words (probabilities)
         )
+
+    def get_documents_by_topic(self) -> [[str]]:
+        # returns a list of docs by topics
+        x = [data for data, target in sorted(zip(self.dataset['data'], self.dataset['target']), key=lambda t : t[1])]
+        curr_target = 0
+        all_list = [[]]
+
+        for data, target in sorted(zip(self.dataset['data'], self.dataset['target']), key=lambda t : t[1]):
+            if target != curr_target:
+                all_list.append([])
+                curr_target = target
+
+            all_list[-1].append(target)
+
+        return all_list
