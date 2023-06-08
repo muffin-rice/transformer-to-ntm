@@ -4,6 +4,8 @@ from sklearn.datasets import fetch_20newsgroups
 import pickle as pkl
 import numpy as np
 from transformers import T5TokenizerFast
+from gensim.corpora import Dictionary
+import re
 
 NEWSGROUPS_DIR = '../data/20news'
 
@@ -17,23 +19,32 @@ class NewsGroupsDataset(Dataset):
         self.tokenizer = tokenizer
         self.out_dim = out_dim
         self.vocab = self.tokenizer.get_vocab()
+        self.dictionary : Dictionary = Dictionary.load(f'{NEWSGROUPS_DIR}/20news_vocab.dict')
 
     def __len__(self):
         return len(self.dataset['data'])
 
-    def get_bow_from_sentence(self, tokenized_sentence):
-        bow_vector = torch.zeros((len(self.vocab)), dtype=torch.float32)
-        # get bow represetentation
-        for tensor_token in tokenized_sentence:
-            bow_vector[tensor_token] += 1
+    def get_vocab_size(self):
+        return len(self.dictionary)
 
-        return bow_vector
+    def get_bow_from_sentence(self, document):
+        tokenizer = lambda s: re.findall('\w+', s.lower())
+        tokens = tokenizer(document)
 
+        bow_representation = self.dictionary.doc2bow(tokens)
+
+        bow_tensor = torch.zeros(len(self.dictionary))
+
+        for token_id, token_count in bow_representation:
+            bow_tensor[token_id] = token_count
+
+        return bow_tensor
 
     def __getitem__(self, idx):
-        line = self.dataset['data'][idx]
+        return self.process_document(self.dataset['data'][idx])
 
-        content = line.strip()
+    def process_document(self, document):
+        content = document.strip()
         # content = line.split("\t")
 
         encoded = self.tokenizer(
@@ -60,20 +71,11 @@ class NewsGroupsDataset(Dataset):
         encoder_mask = encoded.attention_mask.squeeze(0)
         decoder_target = target_encoded.input_ids.squeeze(0)
 
-        all_encoded = self.tokenizer(
-            f"{content}",
-            add_special_tokens=True,
-            max_length=None,
-            padding=False,
-            truncation=False,
-            return_tensors="pt",
-        )
-
-        bow_from_sentence = self.get_bow_from_sentence(all_encoded.input_ids.squeeze(0))
+        bow_from_sentence = self.get_bow_from_sentence(content)
 
         return (
             encoder_input,
             encoder_mask,
             decoder_target,
-            bow_from_sentence / bow_from_sentence.sum(), # get distribution of words (probabilities)
+            bow_from_sentence / bow_from_sentence.sum(),  # get distribution of words (probabilities)
         )

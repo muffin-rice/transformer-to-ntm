@@ -22,6 +22,9 @@ class GeneralDataModule(LightningDataModule):
         self.val_dataset = self.dataset(split='val', out_dim = out_dim, tokenizer=tokenizer)
         self.test_dataset = self.dataset(split='test', out_dim = out_dim, tokenizer=tokenizer)
 
+    def get_vocab_size(self):
+        return self.train_dataset.get_vocab_size()
+
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
                           batch_size=self.batch_size)
